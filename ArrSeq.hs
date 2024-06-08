@@ -19,33 +19,21 @@ instance Seq Arr where
 
     tabulateS :: (Int -> a) -> Int -> Arr a
     tabulateS = A.tabulate
+
+    fromList :: [a] -> Arr a
+    fromList = A.fromList
     
+    appendS :: Arr a -> Arr a -> Arr a
+    appendS x y = joinS $ fromList [x,y] 
+
     mapS :: (a -> b) -> Arr a -> Arr b
     mapS f s = tabulateS (f . (s !)) $ lengthS s
-
-    appendS :: Arr a -> Arr a -> Arr a
-    appendS x y = A.flatten $ A.fromList [x,y] 
-
-    filterS :: (a -> Bool) -> Arr a -> Arr a
-    filterS f s
-                | A.length s == 0 = A.empty
-                | A.length s == 1 = if f (s ! 0) 
-                                        then s
-                                        else A.empty
-                | otherwise = 
-                    let
-                        n = A.length s
-                        m = div n 2
-                        (l,r) = A.subArray 0 m s ||| A.subArray m n s
-                        (fl,fr) = filterS f l ||| filterS f r
-                    in
-                        appendS fl fr
-
+    
     takeS :: Arr a -> Int -> Arr a
     takeS = flip (A.subArray 0)
 
     dropS :: Arr a -> Int -> Arr a
-    dropS s i = A.subArray i (A.length s - i) s
+    dropS s i = A.subArray i (lengthS s - i) s
 
     showtS :: Arr a -> TreeView a (Arr a)
     showtS s
@@ -55,6 +43,13 @@ instance Seq Arr where
                             m = div (A.length s) 2
                           in
                             NODE (takeS s m) (dropS s m)
+
+    filterS :: (a -> Bool) -> Arr a -> Arr a
+    filterS f s = case showtS s of
+                    EMPTY -> emptyS
+                    ELT x | f x -> s
+                    ELT x | otherwise -> emptyS
+                    NODE l r -> uncurry appendS $ filterS f l ||| filterS f r
     
     showlS :: Arr a -> ListView a (Arr a)
     showlS s
@@ -66,21 +61,18 @@ instance Seq Arr where
 
     reduceS :: (a -> a -> a) -> a -> Arr a -> a
     reduceS f e s = case showtS s of
-                        EMPTY -> e
-                        ELT x -> x
-                        NODE l r -> let
-                                    (fl,fr) = reduceS f e l ||| reduceS f e r
-                                   in
-                                    f fl fr
+                      EMPTY -> e
+                      ELT x -> x
+                      NODE l r -> uncurry f $ reduceS f e l ||| reduceS f e r
 
     scanS :: (a -> a -> a) -> a -> Arr a -> (Arr a, a)
     scanS f b s
                 | lengthS s == 0 = (emptyS, b)
                 | lengthS s == 1 = (singletonS b, f b $ s ! 0)
                 | otherwise = let
-                                (s',t) = (1,1)
+                                (s',t) = scanS f b $ compact f s
                               in
-                                (compact f s,reduceS f b s)
+                                (combine f s' s,t)
         where
             compact f s
                     | lengthS s <= 1 = s
@@ -91,7 +83,13 @@ instance Seq Arr where
                                   in
                                     -- Obtengo el techo de la division
                                     tabulateS apply (div (lengthS s + 1) 2)
-            
-    
-    fromList :: [a] -> Arr a
-    fromList = A.fromList
+
+            combine f s' s
+                  | lengthS s == 0 = emptyS
+                  | lengthS s == 1 = takeS s' 1
+                  | otherwise = let
+                                  apply i
+                                        | even i = s' ! div i 2
+                                        | otherwise = f (s' ! div i 2) (s ! (i-1))
+                                in
+                                  tabulateS apply $ lengthS s

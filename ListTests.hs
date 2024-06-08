@@ -4,6 +4,10 @@ import Test.HUnit
 import Seq
 import ListSeq
 
+fromTreeView :: Seq s => TreeView a (s a) -> (s a, s a)
+fromTreeView EMPTY = (emptyS, emptyS)
+fromTreeView (ELT x) = (singletonS x, emptyS)
+fromTreeView (NODE l r) = (l,r)
 
 s0, s1, s2, s3 :: [Int]
 s0 = fromList []
@@ -60,7 +64,7 @@ testsLists =
     testReduceSumSeq0,
     testReduceSumSeq3,
     testScanSumSeq0,
-    testScanSumSeq3
+    testScanSumSeq3,
   ]
 
 

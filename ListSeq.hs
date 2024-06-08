@@ -5,8 +5,9 @@ import Seq
 instance Seq [] where 
     emptyS :: [a]
     emptyS = []
+    
     singletonS :: a -> [a]
-    singletonS x = [x]
+    singletonS = (:[])
     
     lengthS :: [a] -> Int
     lengthS = length
@@ -15,7 +16,7 @@ instance Seq [] where
     nthS = (!!)
     
     tabulateS :: (Int -> a) -> Int -> [a]
-    tabulateS f n = map f [0..(n-1)] 
+    tabulateS f n = map f [0..(n-1)]
 
     mapS :: (a -> b) -> [a] -> [b]
     mapS = map
@@ -37,9 +38,8 @@ instance Seq [] where
     showtS [x] = ELT x
     showtS s =  let
                     m = length s `div` 2
-                    (l,r) = take m s ||| drop m s
                 in
-                    NODE l r
+                    uncurry NODE $ take m s ||| drop m s
                     
     showlS :: [a] -> ListView a [a]
     showlS [] = NIL
@@ -60,7 +60,7 @@ instance Seq [] where
         compact :: (a -> a -> a) -> [a] -> [a]
         compact f [] = []
         compact f [x] = [x]
-        compact f (x : y : xs) = f x y : compact f xs
+        compact f (x : y : xs) = uncurry (:) $ f x y ||| compact f xs
 
     scanS :: (a -> a -> a) -> a -> [a] -> ([a], a)
     scanS _ b [] = ([],b)
@@ -73,11 +73,7 @@ instance Seq [] where
         where
             compact [] = []
             compact [x] = [x]
-            compact (x : y : xs) =
-                let
-                    (x', xs') = f x y ||| compact xs
-                 in
-                    x' : xs'
+            compact (x : y : xs) = uncurry (:) $ f x y ||| compact xs
                     
             combine _ [] = []
             combine (x : _) [_] = [x]

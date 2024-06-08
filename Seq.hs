@@ -1,5 +1,4 @@
 {- Implementación del TAD secuencia -}
-
 module Seq where
 
 class Seq s where
