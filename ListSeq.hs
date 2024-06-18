@@ -22,8 +22,10 @@ instance Seq [] where
     mapS = map
 
     filterS :: (a -> Bool) -> [a] -> [a]
-    filterS = filter
-    
+    filterS p [] = []
+    filterS p (x:xs) = let (bool,list) = p x ||| filter p xs
+                        in if bool then x:list else list
+     
     appendS :: [a] -> [a] -> [a]
     appendS = (++)
     
