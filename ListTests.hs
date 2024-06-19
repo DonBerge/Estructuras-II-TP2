@@ -64,7 +64,7 @@ testsLists =
     testReduceSumSeq0,
     testReduceSumSeq3,
     testScanSumSeq0,
-    testScanSumSeq3,
+    testScanSumSeq3
   ]
 
 
