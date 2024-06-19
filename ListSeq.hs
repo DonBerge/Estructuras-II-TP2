@@ -19,11 +19,15 @@ instance Seq [] where
     tabulateS f n = map f [0..(n-1)]
 
     mapS :: (a -> b) -> [a] -> [b]
-    mapS = map
+    mapS f [] = []
+    mapS f (x:xs) = let (x',xs') = f x ||| mapS f xs
+                     in x' : xs' 
 
     filterS :: (a -> Bool) -> [a] -> [a]
-    filterS = filter
-    
+    filterS p [] = []
+    filterS p (x:xs) = let (bool,xs') = p x ||| filter p xs
+                        in if bool then x:xs' else xs'
+     
     appendS :: [a] -> [a] -> [a]
     appendS = (++)
     
