@@ -23,6 +23,9 @@ instance Seq Arr where
     fromList :: [a] -> Arr a
     fromList = A.fromList
     
+    joinS :: Arr (Arr a) -> Arr a
+    joinS = A.flatten
+
     appendS :: Arr a -> Arr a -> Arr a
     appendS x y = joinS $ fromList [x,y] 
 
@@ -40,7 +43,7 @@ instance Seq Arr where
             | A.length s  == 0 = EMPTY
             | A.length s == 1 = ELT $ s ! 0
             | otherwise = let
-                            m = div (A.length s) 2
+                            m = div (lengthS s) 2
                           in
                             NODE (takeS s m) (dropS s m)
 
@@ -56,14 +59,15 @@ instance Seq Arr where
             | A.length s == 0 = NIL
             | otherwise = CONS (s ! 0) (dropS s 1)
 
-    joinS :: Arr (Arr a) -> Arr a
-    joinS = A.flatten
-
     reduceS :: (a -> a -> a) -> a -> Arr a -> a
     reduceS f e s = case showtS s of
                       EMPTY -> e
-                      ELT x -> x
-                      NODE l r -> uncurry f $ reduceS f e l ||| reduceS f e r
+                      t -> f e $ reduceT f t
+      where
+        reduceT:: (a->a->a) -> TreeView a (Arr a) -> a
+        reduceT f t = case t of
+                        ELT x -> x
+                        NODE l r -> uncurry f $ reduceT f (showtS l) ||| reduceT f (showtS r)
 
     scanS :: (a -> a -> a) -> a -> Arr a -> (Arr a, a)
     scanS f b s
