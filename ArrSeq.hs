@@ -48,11 +48,12 @@ instance Seq Arr where
                             NODE (takeS s m) (dropS s m)
 
     filterS :: (a -> Bool) -> Arr a -> Arr a
-    filterS f s = case showtS s of
-                    EMPTY -> emptyS
-                    ELT x | f x -> s
-                    ELT x | otherwise -> emptyS
-                    NODE l r -> uncurry appendS $ filterS f l ||| filterS f r
+    filterS f s = let
+                    f' x
+                        | f x = singletonS x
+                        | otherwise = emptyS
+                  in
+                    joinS $ mapS f' s
     
     showlS :: Arr a -> ListView a (Arr a)
     showlS s
@@ -60,14 +61,21 @@ instance Seq Arr where
             | otherwise = CONS (s ! 0) (dropS s 1)
 
     reduceS :: (a -> a -> a) -> a -> Arr a -> a
-    reduceS f e s = case showtS s of
-                      EMPTY -> e
-                      t -> f e $ reduceT f t
+    reduceS f e s = case lengthS s of
+                      0 -> e
+                      _ -> f e $ reduce' f s
       where
-        reduceT:: (a->a->a) -> TreeView a (Arr a) -> a
-        reduceT f t = case t of
-                        ELT x -> x
-                        NODE l r -> uncurry f $ reduceT f (showtS l) ||| reduceT f (showtS r)
+        reduce' f s = case lengthS s of
+                        1 -> s ! 0
+                        _ -> reduce' f $ compact f s
+        compact f s = let
+                        n = lengthS s
+                        apply i
+                              | 2*i+1 == n = s ! (2*i)
+                              | otherwise = f (s ! (2*i)) (s ! (2*i+1))
+                      in
+                        -- Obtengo el techo de la division
+                        tabulateS apply (div (n + 1) 2)
 
     scanS :: (a -> a -> a) -> a -> Arr a -> (Arr a, a)
     scanS f b s
@@ -78,22 +86,17 @@ instance Seq Arr where
                               in
                                 (combine f s' s,t)
         where
-            compact f s
-                    | lengthS s <= 1 = s
-                    | otherwise = let
-                                    apply i
-                                            | 2*i+1 == lengthS s = s ! (2*i)
-                                            | otherwise = f (s ! (2*i)) (s ! (2*i+1))
-                                  in
-                                    -- Obtengo el techo de la division
-                                    tabulateS apply (div (lengthS s + 1) 2)
+            compact f s = let
+                            apply i
+                                    | 2*i+1 == lengthS s = s ! (2*i)
+                                    | otherwise = f (s ! (2*i)) (s ! (2*i+1))
+                          in
+                            -- Obtengo el techo de la division
+                            tabulateS apply (div (lengthS s + 1) 2)
 
-            combine f s' s
-                  | lengthS s == 0 = emptyS
-                  | lengthS s == 1 = takeS s' 1
-                  | otherwise = let
-                                  apply i
-                                        | even i = s' ! div i 2
-                                        | otherwise = f (s' ! div i 2) (s ! (i-1))
-                                in
-                                  tabulateS apply $ lengthS s
+            combine f s' s =  let
+                                apply i
+                                    | even i = s' ! div i 2
+                                    | otherwise = f (s' ! div i 2) (s ! (i-1))
+                              in
+                                tabulateS apply $ lengthS s
