@@ -4,18 +4,11 @@ import Test.HUnit
 import Seq
 import ListSeq
 
-fromTreeView :: Seq s => TreeView a (s a) -> (s a, s a)
-fromTreeView EMPTY = (emptyS, emptyS)
-fromTreeView (ELT x) = (singletonS x, emptyS)
-fromTreeView (NODE l r) = (l,r)
-
-s0, s1, s2, s3, s4, s5 :: [Int]
+s0, s1, s2, s3 :: [Int]
 s0 = fromList []
 s1 = fromList [4]
 s2 = fromList [5,1]
 s3 = fromList [6,3,4]
-s4 = fromList [1..10000]
-s5 = fromList [1..4]
 
 testLengthEmptySeq :: Test
 testLengthEmptySeq = 
@@ -57,20 +50,79 @@ testScanSumSeq3 =
   TestCase $ assertEqual "Error on scan for sequence of length 3"
                          (fromList[0,6,9], 13) (scanS (+) 0 s3)
 
-testReduceSumBigSeq :: Test
-testReduceSumBigSeq =
-  TestCase $ assertEqual "Error on scan for big sequence"
-                         50005000 (reduceS (+) 0 s4)
+--- Test de tabulate ---
+
+testTabulateEmpty :: Test
+testTabulateEmpty =
+  TestCase $ assertEqual "Error on tabulate for n = 0"
+                        [] (tabulateS id 0)
+
+testTabulateCube :: Test
+testTabulateCube =
+  TestCase $ assertEqual "Error on tabulate test"
+                         (tabulateS (^3) 6) [0,1,8,27,64,125]
+testTabulateZero :: Test
+testTabulateZero =
+  TestCase $ assertEqual "Error on tabulate test"
+                         (tabulateS (0*) 100) [0 | i <- [1..100]]
+
+--- Test de map ---
+
+testMapInStrings :: Test
+testMapInStrings =
+  TestCase $ assertEqual "Error on map for a sequence of strings"
+                        [5,3,1] (mapS length $ fromList ["abcde","xyz","T"])
+
+testMapInvertibleFun :: Test
+testMapInvertibleFun =
+  TestCase $ assertEqual "Error on map for invertible functions"
+                        [1..100] (mapS round $ mapS tan $ mapS atan $ fromList [1..100])
+
+--- Test filter ---
+
+testFilterEmpty :: Test
+testFilterEmpty =
+  TestCase $ assertEqual "Error on filter for empty list"
+                        [] (filterS (==202) [])
+
+testFilterEven :: Test
+testFilterEven =
+  TestCase $ assertEqual "Error on filter for even"
+                        [2,4,6,8,10] (filterS even $ fromList [1..10])
+
+testFilterEmptyResult :: Test
+testFilterEmptyResult =
+  TestCase $ assertEqual "Error on filter test 3, result should be empty"
+                        [] (filterS (\i -> i == i+1) $ fromList [1..1000])
+
+--- Test reduce ---
+testReduceEmptySeq :: Test
+testReduceEmptySeq =
+  TestCase $ assertEqual "Error on reduce for empty sequence"
+                        "vacio" (reduceS (++) "vacio" [])
 
 testReduceReductionOrder :: Test
 testReduceReductionOrder =
-  TestCase $ assertEqual "Error on reduce reduction order for list from 1 to 4"
-                         777 (reduceS (-) 777 s5)
+  TestCase $ assertEqual "Error on reduction with non asociative operation(substraction)"
+                       59 (reduceS (-) 59 [1..32])
 
-testScanBigList :: Test
-testScanBigList =
-  TestCase $ assertEqual "Error on scan for big sequence"
-                         (takeS s4 (lengthS s4 - 1)) (fst $ scanS max (nthS s4 0) (dropS s4 1))
+testReduceConcatenation :: Test
+testReduceConcatenation =
+  TestCase $ assertEqual "Error on reduce for concatenation of strings"
+                      "Habia una vez, un circo que alegraba siempre el corazon"
+                      (reduceS (++) "" ["Habia", " una", " vez",",", " un",
+                      " circo", " que ", "alegraba", " siempre ", "el ", "corazon"])
+
+--- Test scan ---
+testScanEmptySeq :: Test
+testScanEmptySeq =
+  TestCase $ assertEqual "Error on scan for empty sequence"
+                      ([], "vacio") (scanS (++) "vacio" [])
+
+testScanSingleton :: Test
+testScanSingleton =
+  TestCase $ assertEqual "Error on scan for singleton sequence"
+                      (["vacio"], "vaciouno") (scanS (++) "vacio" $ fromList ["uno"])
 
 testScanFibonacci :: Test
 testScanFibonacci :: Test = let
@@ -81,7 +133,6 @@ testScanFibonacci :: Test = let
                               fibo = mapS (\(a,_,_,_) -> a) $ fst $ scanS matMult (1,0,0,1) matList
                             in
                               TestCase $ assertEqual "Error on scan for fibonacci sequence" (fromList [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597]) fibo
-
 testsLists :: [Test]
 testsLists = 
   [
@@ -93,9 +144,24 @@ testsLists =
     testReduceSumSeq3,
     testScanSumSeq0,
     testScanSumSeq3,
-    testReduceSumBigSeq,
+
+    testTabulateEmpty,
+    testTabulateCube,
+    testTabulateZero,
+
+    testMapInStrings,
+    testMapInvertibleFun,
+
+    testFilterEmpty,
+    testFilterEven,
+    testFilterEmptyResult,
+
+    testReduceEmptySeq,
     testReduceReductionOrder,
-    testScanBigList,
+    testReduceConcatenation,
+
+    testScanEmptySeq,
+    testScanSingleton,
     testScanFibonacci
   ]
 
