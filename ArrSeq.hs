@@ -20,32 +20,8 @@ instance Seq Arr where
     tabulateS :: (Int -> a) -> Int -> Arr a
     tabulateS = A.tabulate
 
-    fromList :: [a] -> Arr a
-    fromList = A.fromList
-    
-    joinS :: Arr (Arr a) -> Arr a
-    joinS = A.flatten
-
-    appendS :: Arr a -> Arr a -> Arr a
-    appendS x y = joinS $ fromList [x,y] 
-
     mapS :: (a -> b) -> Arr a -> Arr b
-    mapS f s = tabulateS (f . (s !)) $ lengthS s
-    
-    takeS :: Arr a -> Int -> Arr a
-    takeS = flip (A.subArray 0)
-
-    dropS :: Arr a -> Int -> Arr a
-    dropS s i = A.subArray i (lengthS s - i) s
-
-    showtS :: Arr a -> TreeView a (Arr a)
-    showtS s
-            | A.length s  == 0 = EMPTY
-            | A.length s == 1 = ELT $ s ! 0
-            | otherwise = let
-                            m = div (lengthS s) 2
-                          in
-                            NODE (takeS s m) (dropS s m)
+    mapS f s = A.tabulate (f . (s !)) $ A.length s
 
     filterS :: (a -> Bool) -> Arr a -> Arr a
     filterS f s = let
@@ -53,29 +29,47 @@ instance Seq Arr where
                         | f x = singletonS x
                         | otherwise = emptyS
                   in
-                    joinS $ mapS f' s
-    
+                    A.flatten $ mapS f' s
+
+    appendS :: Arr a -> Arr a -> Arr a
+    appendS x y = A.flatten $ A.fromList [x,y]
+
+    takeS :: Arr a -> Int -> Arr a
+    takeS = flip (A.subArray 0)
+
+    dropS :: Arr a -> Int -> Arr a
+    dropS s i = A.subArray i (lengthS s - i) s
+
+    showtS :: Arr a -> TreeView a (Arr a)
+    showtS s = case A.length s of
+                0 -> EMPTY
+                1 -> ELT $ s ! 0
+                n -> NODE (takeS s n) (dropS s n)
+
     showlS :: Arr a -> ListView a (Arr a)
-    showlS s
-            | A.length s == 0 = NIL
-            | otherwise = CONS (s ! 0) (dropS s 1)
+    showlS s = case A.length s of
+                0 -> NIL
+                _ -> CONS (s ! 0) (dropS s 1)
+
+    joinS :: Arr (Arr a) -> Arr a
+    joinS = A.flatten 
 
     reduceS :: (a -> a -> a) -> a -> Arr a -> a
-    reduceS f e s = case lengthS s of
+    reduceS f e s = case A.length s of
                       0 -> e
                       _ -> f e $ reduce' f s
       where
-        reduce' f s = case lengthS s of
+        reduce' f s = case A.length s of
                         1 -> s ! 0
                         _ -> reduce' f $ compact f s
         compact f s = let
-                        n = lengthS s
+                        n = A.length s
                         apply i
                               | 2*i+1 == n = s ! (2*i)
                               | otherwise = f (s ! (2*i)) (s ! (2*i+1))
                       in
                         -- Obtengo el techo de la division
-                        tabulateS apply (div (n + 1) 2)
+                        A.tabulate apply (div (n + 1) 2)
 
     scanS :: (a -> a -> a) -> a -> Arr a -> (Arr a, a)
     scanS f b s
@@ -87,16 +81,20 @@ instance Seq Arr where
                                 (combine f s' s,t)
         where
             compact f s = let
+                            n = A.length s
                             apply i
-                                    | 2*i+1 == lengthS s = s ! (2*i)
+                                    | 2*i+1 == n = s ! (2*i)
                                     | otherwise = f (s ! (2*i)) (s ! (2*i+1))
                           in
                             -- Obtengo el techo de la division
-                            tabulateS apply (div (lengthS s + 1) 2)
+                            A.tabulate apply (div (n + 1) 2)
 
             combine f s' s =  let
                                 apply i
                                     | even i = s' ! div i 2
                                     | otherwise = f (s' ! div i 2) (s ! (i-1))
                               in
-                                tabulateS apply $ lengthS s
+                                A.tabulate apply $ A.length s
+
+    fromList :: [a] -> Arr a
+    fromList = A.fromList
