@@ -125,14 +125,16 @@ testScanSingleton =
                       (["vacio"], "vaciouno") (scanS (++) "vacio" $ fromList ["uno"])
 
 testScanFibonacci :: Test
-testScanFibonacci :: Test = let
-                              matMult:: (Int,Int,Int,Int) -> (Int,Int,Int,Int) -> (Int,Int,Int,Int)
-                              matMult (a0,a1,a2,a3) (b0,b1,b2,b3) = (a0*b0+a1*b2, a0*b1+a1*b3, a2*b0+a3*b2, a2*b1+a3*b3)
-                              matList:: [(Int,Int,Int,Int)]
-                              matList = tabulateS (const (1,1,1,0)) 17
-                              fibo = mapS (\(a,_,_,_) -> a) $ fst $ scanS matMult (1,0,0,1) matList
-                            in
-                              TestCase $ assertEqual "Error on scan for fibonacci sequence" (fromList [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597]) fibo
+testScanFibonacci  =    let
+                            fibo = mapS (\(a,_,_,_) -> a) $ fst $ scanS matMult (1,0,0,1) matList
+                        in
+                            TestCase $ assertEqual "Error on scan for fibonacci sequence" (fromList [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597]) fibo
+  where
+    matMult:: (Int,Int,Int,Int) -> (Int,Int,Int,Int) -> (Int,Int,Int,Int)
+    matMult (a0,a1,a2,a3) (b0,b1,b2,b3) = (a0*b0+a1*b2, a0*b1+a1*b3, a2*b0+a3*b2, a2*b1+a3*b3)
+    matList:: [(Int,Int,Int,Int)]
+    matList = tabulateS (const (1,1,1,0)) 17
+                              
 testsLists :: [Test]
 testsLists = 
   [
