@@ -14,9 +14,13 @@ instance Seq [] where
     
     nthS :: [a] -> Int -> a
     nthS = (!!)
-    
+
     tabulateS :: (Int -> a) -> Int -> [a]
-    tabulateS f n = map f [0..(n-1)]
+    tabulateS f n = aux f 0 n where
+        aux f m n | m >= n = []
+                  | m == n-1 = [f m]
+                  | m < n = let (x,xs) = f m ||| aux f (m+1) n
+                              in x:xs
 
     mapS :: (a -> b) -> [a] -> [b]
     mapS f [] = []
