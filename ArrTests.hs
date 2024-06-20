@@ -53,6 +53,13 @@ testScanSumSeq3 =
   TestCase $ assertEqual "Error on scan for sequence of length 3"
                          (fromList[0,6,9], 13) (scanS (+) 0 s3)
 
+--- Test de tabulate ---
+
+testTabulateEmpty :: Test
+testTabulateEmpty =
+  TestCase $ assertEqual "Error on tabulate for n = 0"
+                        A.empty (tabulateS id 0)
+
 testTabulateCube :: Test
 testTabulateCube =
   TestCase $ assertEqual "Error on tabulate test"
@@ -61,6 +68,75 @@ testTabulateZero :: Test
 testTabulateZero =
   TestCase $ assertEqual "Error on tabulate test"
                          (tabulateS (0*) 100) (A.fromList [0 | i <- [1..100]])
+
+--- Test de map ---
+
+testMapInStrings :: Test
+testMapInStrings =
+  TestCase $ assertEqual "Error on map for a sequence of strings"
+                        (A.fromList [5,3,1]) (mapS length $ fromList ["abcde","xyz","T"])
+
+testMapInvertibleFun :: Test
+testMapInvertibleFun =
+  TestCase $ assertEqual "Error on map for invertible functions"
+                        (A.fromList [1..100]) (mapS round $ mapS tan $ mapS atan $ fromList [1..100])
+
+--- Test filter ---
+
+testFilterEmpty :: Test
+testFilterEmpty =
+  TestCase $ assertEqual "Error on filter for empty list"
+                        A.empty (filterS (==202) A.empty)
+
+testFilterEven :: Test
+testFilterEven =
+  TestCase $ assertEqual "Error on filter for even"
+                        (A.fromList [2,4,6,8,10]) (filterS even $ fromList [1..10])
+
+testFilterEmptyResult :: Test
+testFilterEmptyResult =
+  TestCase $ assertEqual "Error on filter test 3, result should be empty"
+                        A.empty (filterS (\i -> i == i+1) $ fromList [1..1000])
+
+--- Test reduce ---
+testReduceEmptySeq :: Test
+testReduceEmptySeq =
+  TestCase $ assertEqual "Error on reduce for empty sequence"
+                        "vacio" (reduceS (++) "vacio" A.empty)
+
+testReduceReductionOrder :: Test
+testReduceReductionOrder =
+  TestCase $ assertEqual "Error on reduction with non asociative operation(substraction)"
+                       59 (reduceS (-) 59 $ A.fromList [1..32])
+
+testReduceConcatenation :: Test
+testReduceConcatenation =
+  TestCase $ assertEqual "Error on reduce for concatenation of strings"
+                      "Habia una vez, un circo que alegraba siempre el corazon"
+                      (reduceS (++) "" $ A.fromList ["Habia", " una", " vez",",", " un",
+                      " circo", " que ", "alegraba", " siempre ", "el ", "corazon"])
+
+--- Test scan ---
+testScanEmptySeq :: Test
+testScanEmptySeq =
+  TestCase $ assertEqual "Error on scan for empty sequence"
+                      (A.empty, "vacio") (scanS (++) "vacio" A.empty)
+
+testScanSingleton :: Test
+testScanSingleton =
+  TestCase $ assertEqual "Error on scan for singleton sequence"
+                      (A.fromList ["vacio"], "vaciouno") (scanS (++) "vacio" $ fromList ["uno"])
+
+testScanFibonacci :: Test
+testScanFibonacci :: Test = let
+                              matMult:: (Int,Int,Int,Int) -> (Int,Int,Int,Int) -> (Int,Int,Int,Int)
+                              matMult (a0,a1,a2,a3) (b0,b1,b2,b3) = (a0*b0+a1*b2, a0*b1+a1*b3, a2*b0+a3*b2, a2*b1+a3*b3)
+                              matList:: Arr (Int,Int,Int,Int)
+                              matList = tabulateS (const (1,1,1,0)) 17
+                              fibo = mapS (\(a,_,_,_) -> a) $ fst $ scanS matMult (1,0,0,1) matList
+                            in
+                              TestCase $ assertEqual "Error on scan for fibonacci sequence" (fromList [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597]) fibo
+
 
 testsArray = 
   [
@@ -72,8 +148,25 @@ testsArray =
     testReduceSumSeq3,
     testScanSumSeq0,
     testScanSumSeq3,
+
+    testTabulateEmpty,
     testTabulateCube,
-    testTabulateZero
+    testTabulateZero,
+
+    testMapInStrings,
+    testMapInvertibleFun,
+
+    testFilterEmpty,
+    testFilterEven,
+    testFilterEmptyResult,
+
+    testReduceEmptySeq,
+    testReduceReductionOrder,
+    testReduceConcatenation,
+
+    testScanEmptySeq,
+    testScanSingleton,
+    testScanFibonacci
   ]
 
 
