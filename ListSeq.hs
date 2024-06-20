@@ -17,18 +17,20 @@ instance Seq [] where
     nthS = (!!)
 
     tabulateS :: (Int -> a) -> Int -> [a]
-    tabulateS f n = aux f 0 n
+    tabulateS f n = tabulate' f 0 n
       where
-        aux f m n
-            | m >= n = []
-            | m == n - 1 = [f m]
-            | m < n =
-                let (x, xs) = f m ||| aux f (m + 1) n
+        tabulate' f i n
+            | i >= n = []
+            | otherwise =
+                let (x, xs) = f i ||| tabulate' f (i + 1) n
                  in x : xs
 
     mapS :: (a -> b) -> [a] -> [b]
     mapS f [] = []
     mapS f (x : xs) =
+        -- Puede escribirse tambien como
+        --   uncurry (:) $ f x ||| mapS f xs
+        -- Pero esta forma hace el codigo mas claro
         let (x', xs') = f x ||| mapS f xs
          in x' : xs'
 
@@ -54,14 +56,27 @@ instance Seq [] where
         let
             m = length s `div` 2
          in
-            uncurry NODE $ take m s ||| drop m s
+            uncurry NODE $ takeDrop m s
+      where
+        -- O(n)
+        -- Tambien se puede hacer
+        -- take n xs ||| drop n xs
+        -- Pero eso recorre la lista 2 veces cuando no se paraleliza
+        -- En cambio esta funcion la recorre una vez
+        takeDrop 0 xs = ([], xs)
+        takeDrop _ [] = ([], [])
+        takeDrop n (x : xs) =
+            let
+                (t, d) = takeDrop (n - 1) xs
+             in
+                (x : t, d)
 
     showlS :: [a] -> ListView a [a]
     showlS [] = NIL
     showlS (x : xs) = CONS x xs
 
     joinS :: [[a]] -> [a]
-    joinS = concat
+    joinS = reduceS (++) []
 
     reduceS :: (a -> a -> a) -> a -> [a] -> a
     reduceS f e [] = e
@@ -75,7 +90,11 @@ instance Seq [] where
         compact :: (a -> a -> a) -> [a] -> [a]
         compact f [] = []
         compact f [x] = [x]
-        compact f (x : y : xs) = uncurry (:) $ f x y ||| compact f xs
+        compact f (x : y : xs) =
+            let
+                (x', xs') = f x y ||| compact f xs
+             in
+                x' : xs'
 
     scanS :: (a -> a -> a) -> a -> [a] -> ([a], a)
     scanS _ b [] = ([], b)
@@ -89,7 +108,11 @@ instance Seq [] where
       where
         compact [] = []
         compact [x] = [x]
-        compact (x : y : xs) = uncurry (:) $ f x y ||| compact xs
+        compact (x : y : xs) =
+            let
+                (x', xs') = f x y ||| compact xs
+             in
+                x' : xs'
 
         combine _ [] = []
         combine (x : _) [_] = [x]
