@@ -3,6 +3,7 @@ module ArrTests where
 import Test.HUnit
 import Seq
 import Arr        (Arr)
+import Arr qualified as A
 import ArrSeq
 
 
@@ -52,6 +53,15 @@ testScanSumSeq3 =
   TestCase $ assertEqual "Error on scan for sequence of length 3"
                          (fromList[0,6,9], 13) (scanS (+) 0 s3)
 
+testTabulateCube :: Test
+testTabulateCube =
+  TestCase $ assertEqual "Error on tabulate test"
+                         (tabulateS (^3) 6) (A.fromList [0,1,8,27,64,125])
+testTabulateZero :: Test
+testTabulateZero =
+  TestCase $ assertEqual "Error on tabulate test"
+                         (tabulateS (0*) 100) (A.fromList [0 | i <- [1..100]])
+
 testsArray = 
   [
     testMapEmptySeq,
@@ -61,7 +71,9 @@ testsArray =
     testReduceSumSeq0,
     testReduceSumSeq3,
     testScanSumSeq0,
-    testScanSumSeq3
+    testScanSumSeq3,
+    testTabulateCube,
+    testTabulateZero
   ]
 
 
